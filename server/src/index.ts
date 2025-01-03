@@ -10,6 +10,8 @@ interface GameData {
   id: string;
   players?: Record<string, string>;   // browserId => playerName
   teams?: Record<string, string[]>;   // teamName => array of browserIds
+  wordsPerPlayer?: number;
+  wordsByPlayer?: Record<string, string[]>;
 }
 const games: Record<string, GameData> = {};
 
@@ -123,6 +125,41 @@ app.post('/admin/game/:gameId/distribute-teams', (req, res) => {
   }
 
   res.json({ ok: true, teams: game.teams });
+});
+
+// POST /admin/game/:gameId/set-words => body: { wordsPerPlayer }
+app.post('/admin/game/:gameId/set-words', (req, res) => {
+  const { gameId } = req.params;
+  const { wordsPerPlayer } = req.body;
+  const game = games[gameId];
+  if (!game) {
+    return res.json({ ok: false, error: 'No such game' });
+  }
+  game.wordsPerPlayer = wordsPerPlayer;
+  // Initialize wordsByPlayer if missing
+  if (!game.wordsByPlayer) {
+    game.wordsByPlayer = {};
+  }
+  return res.json({ ok: true, wordsPerPlayer });
+});
+
+// POST /game/:gameId/submit-words => body: { browserId, words: string[] }
+app.post('/game/:gameId/submit-words', (req, res) => {
+  const { gameId } = req.params;
+  const { browserId, words } = req.body;
+  const game = games[gameId];
+  if (!game) {
+    return res.json({ ok: false, error: 'No such game' });
+  }
+  if (!game.wordsByPlayer) {
+    game.wordsByPlayer = {};
+  }
+  // If the user already submitted, forbid changes
+  if (game.wordsByPlayer[browserId]?.length) {
+    return res.json({ ok: false, error: 'Already submitted' });
+  }
+  game.wordsByPlayer[browserId] = words || [];
+  return res.json({ ok: true });
 });
 
 app.listen(port, () => {

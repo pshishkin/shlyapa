@@ -12,6 +12,9 @@ function App() {
   const [players, setPlayers] = useState({});
   const gameId = getGameIdFromUrl() || '';
   const [playerName, setPlayerName] = useState('');
+  const [wordsPerPlayer, setWordsPerPlayer] = useState(0);
+  const [myWords, setMyWords] = useState([]);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
 
   useEffect(() => {
     let browserId = localStorage.getItem('shlyapa_browser_id');
@@ -42,9 +45,62 @@ function App() {
           if (!gameData) return;
           setTeams(gameData.teams || {});
           setPlayers(gameData.players || {});
+          setWordsPerPlayer(gameData.wordsPerPlayer || 0);
+          if (gameData.wordsByPlayer?.[browserId]) {
+            setMyWords(gameData.wordsByPlayer[browserId]);
+            setHasSubmitted(true);
+          }
         });
     }
   }, [gameId]);
+
+  async function submitWords() {
+    const browserId = localStorage.getItem('shlyapa_browser_id') || '';
+    // POST myWords
+    const res = await fetch(`/game/${gameId}/submit-words`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ browserId, words: myWords }),
+    });
+    const data = await res.json();
+    if(!data.ok) {
+      alert(data.error || 'Error submitting words');
+    } else {
+      setHasSubmitted(true);
+    }
+  }
+
+  function renderWordInputs() {
+    if (!wordsPerPlayer) return null;
+    const inputs = [];
+    for (let i = 0; i < wordsPerPlayer; i++) {
+      inputs.push(
+        <div key={i} style={{ marginBottom: '5px' }}>
+          <input
+            type="text"
+            disabled={hasSubmitted}
+            value={myWords[i] || ''}
+            onChange={(e) => {
+              const copy = [...myWords];
+              copy[i] = e.target.value;
+              setMyWords(copy);
+            }}
+          />
+        </div>
+      );
+    }
+    return (
+      <div style={{ margin: '10px 0' }}>
+        <h4>Enter your words</h4>
+        {inputs}
+        {!hasSubmitted && (
+          <button onClick={submitWords} style={{ marginTop: '10px' }}>
+            Submit Words
+          </button>
+        )}
+      </div>
+    );
+  }
 
   function renderTeams() {
     return Object.entries(teams).map(([teamName, arrOfBrowserIds]) => (
@@ -68,6 +124,8 @@ function App() {
       <p>Первая версия фронтенда</p>
       {gameId && <p>Game ID: {gameId}</p>}
 
+      {renderWordInputs()}
+
       {Object.keys(teams).length > 0 && (
         <div style={{ marginTop: '20px', border: '1px solid #ccc', padding: '10px' }}>
           <h4>Team Distribution</h4>
@@ -84,6 +142,7 @@ function Admin() {
   const [teamCount, setTeamCount] = useState(2);
 
   const [gamesData, setGamesData] = useState({});
+  const [newWordsPerPlayer, setNewWordsPerPlayer] = useState(5);
 
   async function loadGames() {
     const res = await fetch('/admin/games');
@@ -122,6 +181,24 @@ function Admin() {
     setGamesData((prev) => ({ ...prev, [id]: data }));
   }
 
+  async function setWordsPerPlayer() {
+    if (!selectedGameId) {
+      return alert('Select a game first.');
+    }
+    const res = await fetch(`/admin/game/${selectedGameId}/set-words`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ wordsPerPlayer: newWordsPerPlayer }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      alert('Error: ' + data.error);
+    } else {
+      alert('wordsPerPlayer set to ' + newWordsPerPlayer);
+      await loadSingleGame(selectedGameId);
+    }
+  }
+
   useEffect(() => {
     if (selectedGameId) {
       loadSingleGame(selectedGameId);
@@ -137,14 +214,17 @@ function Admin() {
     return (
       <div style={{ marginTop: '10px' }}>
         {Object.entries(gameData.teams).map(([teamName, arr]) => (
-          <div key={teamName} style={{ marginTop: '5px' }}>
-            <strong>Team {teamName}:</strong>{' '}
+          <div key={teamName}>
+            <strong>Team {teamName}:</strong>
             <ul>
               {arr.map((browserId) => (
                 <li key={browserId}>
                   {gameData.players && gameData.players[browserId]
                     ? gameData.players[browserId]
                     : browserId}
+                  {gameData.wordsByPlayer?.[browserId]
+                    ? ` (${gameData.wordsByPlayer[browserId].length} words)`
+                    : ' (0 words)'}
                 </li>
               ))}
             </ul>
@@ -176,6 +256,22 @@ function Admin() {
       {selectedGameId && (
         <div style={{ border: '1px solid #ccc', padding: '10px' }}>
           <h4>Selected Game: {selectedGameId}</h4>
+
+          <div style={{ marginTop: '10px' }}>
+            <label>
+              Words per player:
+              <input
+                type="number"
+                min={1}
+                value={newWordsPerPlayer}
+                onChange={(e) => setNewWordsPerPlayer(Number(e.target.value))}
+                style={{ width: '50px', marginLeft: '5px' }}
+              />
+            </label>
+            <button onClick={setWordsPerPlayer} style={{ marginLeft: '10px' }}>
+              Set words-per-player
+            </button>
+          </div>
 
           <div style={{ marginTop: '10px' }}>
             Number of teams:
