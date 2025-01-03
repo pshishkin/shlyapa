@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  shlyapa-server:
+    build: ./server
+    container_name: shlyapa_server
+    ports:
+      - "8080:8080"
+    command: "npm run start"
+  
+  shlyapa-client:
+    build: ./client
+    container_name: shlyapa_client
+    ports:
+      - "3000:3000"
+    command: "npm start" 
