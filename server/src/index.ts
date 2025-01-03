@@ -154,10 +154,30 @@ app.post('/game/:gameId/submit-words', (req, res) => {
   if (!game.wordsByPlayer) {
     game.wordsByPlayer = {};
   }
+
   // If the user already submitted, forbid changes
   if (game.wordsByPlayer[browserId]?.length) {
     return res.json({ ok: false, error: 'Already submitted' });
   }
+
+  // 1) Check that words array length matches game.wordsPerPlayer
+  if (!Array.isArray(words) || words.length !== game.wordsPerPlayer) {
+    return res.json({
+      ok: false,
+      error: `Please provide exactly ${game.wordsPerPlayer} words.`,
+    });
+  }
+
+  // 2) Check that each word has at least 2 non-whitespace chars
+  for (const w of words) {
+    if (!w || w.trim().length < 2) {
+      return res.json({
+        ok: false,
+        error: 'Each word must have at least 2 characters.',
+      });
+    }
+  }
+
   game.wordsByPlayer[browserId] = words || [];
   return res.json({ ok: true });
 });
