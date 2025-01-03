@@ -15,6 +15,11 @@ function App() {
   const [wordsPerPlayer, setWordsPerPlayer] = useState(0);
   const [myWords, setMyWords] = useState([]);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [rounds, setRounds] = useState([]);
+  const [activeRound, setActiveRound] = useState(null);
+  const [currentWord, setCurrentWord] = useState('');
+  const [isMyTurn, setIsMyTurn] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(0);
 
   useEffect(() => {
     let browserId = localStorage.getItem('shlyapa_browser_id');
@@ -117,6 +122,46 @@ function App() {
     ));
   }
 
+  async function startTurn() {
+    // POST /game/:gameId/start-turn
+    await fetch(`/game/${gameId}/start-turn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ browserId }),
+    });
+    // Then poll or fetch game state to see turnEndsAt etc.
+  }
+
+  async function guessWord() {
+    const res = await fetch(`/game/${gameId}/guess`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ browserId }),
+    });
+    const data = await res.json();
+    if(data.ok) {
+      // guessedWord was removed from unguessed
+      // if data.roundIsOver == true, we know round ended
+      // we might do setCurrentWord('') or fetch new round state
+    } else {
+      alert('Error: ' + data.error);
+    }
+  }
+
+  async function skipWord() {
+    const res = await fetch(`/game/${gameId}/skip`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ browserId }),
+    });
+    const data = await res.json();
+    if(data.ok) {
+      setCurrentWord(data.nextWord);
+    } else {
+      alert('Error: ' + data.error);
+    }
+  }
+
   return (
     <div style={{ margin: '20px', fontFamily: 'sans-serif', textAlign: 'center' }}>
       <h3>Your name: {playerName}</h3>
@@ -143,6 +188,7 @@ function Admin() {
 
   const [gamesData, setGamesData] = useState({});
   const [newWordsPerPlayer, setNewWordsPerPlayer] = useState(5);
+  const [secondsPerTurn, setSecondsPerTurn] = useState(30);
 
   async function loadGames() {
     const res = await fetch('/admin/games');
@@ -199,6 +245,22 @@ function Admin() {
     }
   }
 
+  async function startNewRound() {
+    if (!selectedGameId) return alert('Select a game first.');
+    const res = await fetch(`/admin/game/${selectedGameId}/start-round`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secondsPerTurn }),
+    });
+    const data = await res.json();
+    if (!data.ok) {
+      alert('Error: ' + data.error);
+    } else {
+      alert(`Round ${data.roundNumber} started with ${data.secondsPerTurn} seconds per turn`);
+      await loadSingleGame(selectedGameId);
+    }
+  }
+
   useEffect(() => {
     if (selectedGameId) {
       loadSingleGame(selectedGameId);
@@ -210,28 +272,20 @@ function Admin() {
   }, []);
 
   function renderTeamDistribution(gameData) {
-    if (!gameData?.teams) return null;
-    return (
-      <div style={{ marginTop: '10px' }}>
-        {Object.entries(gameData.teams).map(([teamName, arr]) => (
-          <div key={teamName}>
-            <strong>Team {teamName}:</strong>
-            <ul>
-              {arr.map((browserId) => (
-                <li key={browserId}>
-                  {gameData.players && gameData.players[browserId]
-                    ? gameData.players[browserId]
-                    : browserId}
-                  {gameData.wordsByPlayer?.[browserId]
-                    ? ` (${gameData.wordsByPlayer[browserId].length} words)`
-                    : ' (0 words)'}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ))}
-      </div>
-    );
+    return Object.entries(gameData.teams || {}).map(([teamName, arrOfBrowserIds]) => {
+      const roundScores = gameData.rounds?.map(r => r.teamScores[teamName] || 0) ?? [];
+      const roundsString = roundScores.join('/');
+      return (
+        <div key={teamName}>
+          <strong>Team {teamName} ({roundsString})</strong>
+          <ul>
+            {arrOfBrowserIds.map(bid => (
+              <li key={bid}>{gameData.players[bid]}</li>
+            ))}
+          </ul>
+        </div>
+      );
+    });
   }
 
   return (
@@ -285,6 +339,19 @@ function Admin() {
             />
             <button onClick={distributeTeams} style={{ marginLeft: '10px' }}>
               Distribute players into teams
+            </button>
+          </div>
+
+          <div style={{ marginTop: '10px' }}>
+            <label>Seconds per turn: </label>
+            <input
+              type="number"
+              min={5}
+              value={secondsPerTurn}
+              onChange={(e) => setSecondsPerTurn(Number(e.target.value))}
+            />
+            <button onClick={startNewRound} style={{ marginLeft: '10px' }}>
+              Start new round
             </button>
           </div>
 
