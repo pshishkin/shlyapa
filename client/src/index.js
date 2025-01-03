@@ -56,8 +56,42 @@ function App() {
             setHasSubmitted(true);
           }
         });
+      fetchGameData();
+
+      const intervalId = setInterval(() => {
+        fetchGameData();
+      }, 2000);
+
+      return () => clearInterval(intervalId);
     }
   }, [gameId]);
+
+  async function fetchGameData() {
+    const browserId = localStorage.getItem('shlyapa_browser_id') || '';
+    const res = await fetch(`/game/${gameId}`);
+    const gameData = await res.json();
+    if (!gameData) return;
+
+    setTeams(gameData.teams || {});
+    setPlayers(gameData.players || {});
+    setWordsPerPlayer(gameData.wordsPerPlayer || 0);
+    setRounds(gameData.rounds || []);
+
+    const ar = gameData.rounds?.find(r => r.isActive);
+    if (ar) {
+      setActiveRound(ar);
+      const now = Date.now();
+      const isMine = ar.currentPlayer === browserId && ar.turnEndsAt && (ar.turnEndsAt > now);
+      setIsMyTurn(isMine);
+      if (ar.turnEndsAt) {
+        setTimeLeft(Math.max(0, Math.floor((ar.turnEndsAt - now)/1000)));
+      }
+    } else {
+      setActiveRound(null);
+      setIsMyTurn(false);
+      setTimeLeft(0);
+    }
+  }
 
   async function submitWords() {
     const browserId = localStorage.getItem('shlyapa_browser_id') || '';
@@ -123,16 +157,22 @@ function App() {
   }
 
   async function startTurn() {
-    // POST /game/:gameId/start-turn
-    await fetch(`/game/${gameId}/start-turn`, {
+    const browserId = localStorage.getItem('shlyapa_browser_id') || '';
+    const res = await fetch(`/game/${gameId}/start-turn`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ browserId }),
     });
-    // Then poll or fetch game state to see turnEndsAt etc.
+    const data = await res.json();
+    if (!data.ok) {
+      alert(data.error || 'Error starting turn');
+    } else {
+      fetchGameData();
+    }
   }
 
   async function guessWord() {
+    const browserId = localStorage.getItem('shlyapa_browser_id') || '';
     const res = await fetch(`/game/${gameId}/guess`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -140,15 +180,14 @@ function App() {
     });
     const data = await res.json();
     if(data.ok) {
-      // guessedWord was removed from unguessed
-      // if data.roundIsOver == true, we know round ended
-      // we might do setCurrentWord('') or fetch new round state
+      fetchGameData();
     } else {
-      alert('Error: ' + data.error);
+      alert(data.error || 'Error guessing word');
     }
   }
 
   async function skipWord() {
+    const browserId = localStorage.getItem('shlyapa_browser_id') || '';
     const res = await fetch(`/game/${gameId}/skip`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -158,8 +197,36 @@ function App() {
     if(data.ok) {
       setCurrentWord(data.nextWord);
     } else {
-      alert('Error: ' + data.error);
+      alert(data.error || 'Error skipping word');
     }
+  }
+
+  function renderActiveTurnUI() {
+    return (
+      <div style={{ marginTop: '10px', border: '1px solid #ccc', padding: '10px' }}>
+        <h4>It's your turn!</h4>
+        <p>Time left: {timeLeft} s</p>
+        <p>Word: {currentWord || '(click Guess or Skip to load one)'} </p>
+        <button onClick={guessWord}>Guess</button>
+        <button onClick={skipWord} style={{ marginLeft: '10px' }}>Skip</button>
+      </div>
+    );
+  }
+
+  function renderRoundInfo() {
+    if (!activeRound) {
+      return null;
+    }
+    const isRoundOverSoon = activeRound.unguessedWords?.length === 0;
+    return (
+      <div style={{ marginTop: '10px', border: '1px solid #ccc', padding: '10px' }}>
+        <h4>Round {activeRound.roundNumber} is in progress</h4>
+        {isMyTurn
+          ? renderActiveTurnUI()
+          : <button onClick={startTurn}>Start Turn</button>
+        }
+      </div>
+    );
   }
 
   return (
@@ -177,6 +244,8 @@ function App() {
           {renderTeams()}
         </div>
       )}
+
+      {activeRound && renderRoundInfo()}
     </div>
   );
 }
@@ -272,7 +341,15 @@ function Admin() {
   }, []);
 
   function renderTeamDistribution(gameData) {
-    return Object.entries(gameData.teams || {}).map(([teamName, arrOfBrowserIds]) => {
+    if (!gameData) {
+      return <p>No game data loaded yet.</p>;
+    }
+
+    if (!gameData.teams) {
+      return <p>No teams yet!</p>;
+    }
+
+    return Object.entries(gameData.teams).map(([teamName, arrOfBrowserIds]) => {
       const roundScores = gameData.rounds?.map(r => r.teamScores[teamName] || 0) ?? [];
       const roundsString = roundScores.join('/');
       return (
@@ -355,7 +432,11 @@ function Admin() {
             </button>
           </div>
 
-          {renderTeamDistribution(gamesData[selectedGameId])}
+          {gamesData[selectedGameId] ? (
+            renderTeamDistribution(gamesData[selectedGameId])
+          ) : (
+            <p>No data loaded yet</p>
+          )}
         </div>
       )}
     </div>
