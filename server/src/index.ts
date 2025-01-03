@@ -22,6 +22,12 @@ app.post('/game', (req, res) => {
   res.json({ ok: true, gameId: newId });
 });
 
+app.post('/admin/clear', (req, res) => {
+  // Reset the in-memory store of games:
+  Object.keys(games).forEach((id) => delete games[id]);
+  res.json({ ok: true, message: 'Cleared all games' });
+});
+
 app.listen(port, () => {
   console.log(`Shlyapa server is running on port ${port}`);
 }); 
