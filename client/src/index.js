@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 
 function App() {
@@ -11,17 +11,42 @@ function App() {
 }
 
 function Admin() {
-  const createNewGame = async () => {
-    await fetch('/admin/clear', { method: 'POST' });
-    alert('Cleared all games on the server');
-  };
+  const [gameIds, setGameIds] = useState([]);
+
+  // fetch the list of games from server
+  async function loadGames() {
+    const res = await fetch('/admin/games');
+    const data = await res.json();
+    setGameIds(data);
+  }
+
+  // create a new random game
+  async function createNewGame() {
+    const res = await fetch('/admin/game', { method: 'POST' });
+    const data = await res.json();
+    alert('New game created: ' + data.gameId);
+    await loadGames(); // refresh list
+  }
+
+  // load game list on first render
+  useEffect(() => {
+    loadGames();
+  }, []);
 
   return (
     <div style={{ margin: '20px' }}>
       <h2>Admin Page</h2>
       <button onClick={createNewGame}>
-        Create a new game (clear server memory)
+        Create a new game
       </button>
+      <h3>Games:</h3>
+      <ul>
+        {gameIds.map((id) => (
+          <li key={id}>
+            {id} – <a href={'/?gameId=' + id}>Join link</a>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

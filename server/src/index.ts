@@ -1,4 +1,5 @@
 import express from 'express';
+import crypto from 'crypto';
 
 const app = express();
 const port = 8080;
@@ -26,6 +27,18 @@ app.post('/admin/clear', (req, res) => {
   // Reset the in-memory store of games:
   Object.keys(games).forEach((id) => delete games[id]);
   res.json({ ok: true, message: 'Cleared all games' });
+});
+
+// POST /admin/game => Create a new game with a random ID
+app.post('/admin/game', (req, res) => {
+  const newId = crypto.randomBytes(3).toString('hex'); // for example: "2af93c"
+  games[newId] = { id: newId };
+  res.json({ ok: true, gameId: newId });
+});
+
+// GET /admin/games => Return all game IDs
+app.get('/admin/games', (req, res) => {
+  res.json(Object.keys(games));
 });
 
 app.listen(port, () => {
