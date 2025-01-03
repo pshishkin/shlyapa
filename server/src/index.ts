@@ -321,17 +321,24 @@ app.post('/game/:gameId/guess', (req, res) => {
     round.teamScores[userTeam]++;
   }
 
+  // if the round is not over, pick another random word for the next guess
+  let nextWord = null;
+  if (round.unguessedWords.length > 0) {
+    const nextIndex = Math.floor(Math.random() * round.unguessedWords.length);
+    nextWord = round.unguessedWords[nextIndex];
+  }
+
   // check if the round is finished (no words left)
   if (round.unguessedWords.length === 0) {
     round.isActive = false;
   }
 
-  // return the word that was guessed
   res.json({
     ok: true,
     guessedWord: word,
     teamScores: round.teamScores,
     roundIsOver: !round.isActive,
+    nextWord,
   });
 });
 

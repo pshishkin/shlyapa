@@ -179,7 +179,12 @@ function App() {
       body: JSON.stringify({ browserId }),
     });
     const data = await res.json();
-    if(data.ok) {
+    if (data.ok) {
+      if (!data.roundIsOver && data.nextWord) {
+        setCurrentWord(data.nextWord);
+      } else {
+        setCurrentWord('(No more words)');
+      }
       fetchGameData();
     } else {
       alert(data.error || 'Error guessing word');
