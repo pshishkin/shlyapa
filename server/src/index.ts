@@ -7,8 +7,7 @@ const port = 8080;
 // Храним все данные в памяти:
 interface GameData {
   id: string;
-  // тут можно добавить все поля текущей игры:
-  // список игроков, команд, введённые слова и т.д.
+  players?: Record<string, string>; // browserId => name
 }
 const games: Record<string, GameData> = {};
 
@@ -39,6 +38,34 @@ app.post('/admin/game', (req, res) => {
 // GET /admin/games => Return all game IDs
 app.get('/admin/games', (req, res) => {
   res.json(Object.keys(games));
+});
+
+// GET /game/:gameId/player/:browserId => returns { name: string|null }
+app.get('/game/:gameId/player/:browserId', (req, res) => {
+  const { gameId, browserId } = req.params;
+  const game = games[gameId];
+  if (!game) {
+    return res.json({ name: null });
+  }
+  // If players dictionary doesn't exist, or no entry => name is null
+  const playerName = game.players?.[browserId] ?? null;
+  res.json({ name: playerName });
+});
+
+// POST /game/:gameId/player => body: { browserId, name }
+app.use(express.json()); // so we can parse JSON body
+app.post('/game/:gameId/player', (req, res) => {
+  const { gameId } = req.params;
+  const { browserId, name } = req.body;
+  const game = games[gameId];
+  if (!game) {
+    return res.json({ ok: false, error: 'No such game' });
+  }
+  if (!game.players) {
+    game.players = {};
+  }
+  game.players[browserId] = name;
+  res.json({ ok: true });
 });
 
 app.listen(port, () => {
