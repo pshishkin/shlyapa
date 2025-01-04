@@ -271,6 +271,9 @@ function Admin() {
   const [newWordsPerPlayer, setNewWordsPerPlayer] = useState(5);
   const [secondsPerTurn, setSecondsPerTurn] = useState(30);
 
+  // Keep track of which rounds are expanded
+  const [roundDetailVisibility, setRoundDetailVisibility] = useState({});
+
   async function loadGames() {
     const res = await fetch('/admin/games');
     const data = await res.json();
@@ -344,6 +347,47 @@ function Admin() {
       alert(`Round ${data.roundNumber} started with ${data.secondsPerTurn} seconds per turn`);
       await loadSingleGame(selectedGameId);
     }
+  }
+
+  function toggleRoundDetail(roundNumber) {
+    setRoundDetailVisibility((prev) => ({
+      ...prev,
+      [roundNumber]: !prev[roundNumber], // flip visibility
+    }));
+  }
+
+  function renderRounds(gameData) {
+    if (!gameData.rounds || gameData.rounds.length === 0) {
+      return <p>No rounds yet</p>;
+    }
+    return gameData.rounds.map((r) => {
+      const isDetailVisible = !!roundDetailVisibility[r.roundNumber];
+      // convert teamScores object { A: 3, B: 5 } -> e.g. "A:3, B:5"
+      const scoresString = Object.entries(r.teamScores || {})
+        .map(([teamName, score]) => `${teamName}: ${score}`)
+        .join(', ');
+
+      return (
+        <div
+          key={r.roundNumber}
+          style={{ marginTop: '10px', border: '1px solid #ccc', padding: '10px' }}
+        >
+          <p>
+            Round {r.roundNumber} {r.isActive ? '(In progress)' : '(Finished)'}
+          </p>
+          <button onClick={() => toggleRoundDetail(r.roundNumber)}>
+            {isDetailVisible ? 'Hide details' : 'Show details'}
+          </button>
+          {isDetailVisible && (
+            <div style={{ marginTop: '10px' }}>
+              <p>Guessed words ({r.guessedWords.length}): {r.guessedWords.join(', ')}</p>
+              <p>Unguessed words ({r.unguessedWords.length}): {r.unguessedWords.join(', ')}</p>
+              <p>Team scores: {scoresString}</p>
+            </div>
+          )}
+        </div>
+      );
+    });
   }
 
   useEffect(() => {
@@ -470,6 +514,9 @@ function Admin() {
             <div>
               {renderGamePlayers(gamesData[selectedGameId])}
               {renderTeamDistribution(gamesData[selectedGameId])}
+              <hr />
+              <h4>Rounds</h4>
+              {renderRounds(gamesData[selectedGameId])}
             </div>
           ) : (
             <p>No data loaded yet</p>
