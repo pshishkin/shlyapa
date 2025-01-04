@@ -142,18 +142,23 @@ function App() {
   }
 
   function renderTeams() {
-    return Object.entries(teams).map(([teamName, arrOfBrowserIds]) => (
-      <div key={teamName} style={{ marginTop: '10px' }}>
-        <strong>Team {teamName}:</strong>
-        <ul>
-          {arrOfBrowserIds.map((bid) => (
-            <li key={bid}>
-              {players[bid] || bid}
-            </li>
-          ))}
-        </ul>
-      </div>
-    ));
+    return Object.entries(teams).map(([teamName, arrOfBrowserIds]) => {
+      const roundScores = rounds?.map(r => r.teamScores[teamName] || 0) ?? [];
+      const roundsString = roundScores.join('/');
+
+      return (
+        <div key={teamName} style={{ marginTop: '10px' }}>
+          <strong>Team {teamName} ({roundsString})</strong>
+          <ul>
+            {arrOfBrowserIds.map((bid) => (
+              <li key={bid}>
+                {players[bid] || bid}
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    });
   }
 
   async function startTurn() {
@@ -268,6 +273,10 @@ function Admin() {
     const res = await fetch('/admin/games');
     const data = await res.json();
     setGameIds(data);
+    if (data.length > 0) {
+      setSelectedGameId(data[0]);
+      loadSingleGame(data[0]);
+    }
   }
 
   async function createNewGame() {
@@ -381,10 +390,6 @@ function Admin() {
         {gameIds.map((id) => (
           <li key={id}>
             <a href={'/?gameId=' + id}>Join link {id}</a>
-            {'  '}
-            <button onClick={() => setSelectedGameId(id)}>
-              Admin show
-            </button>
           </li>
         ))}
       </ul>
