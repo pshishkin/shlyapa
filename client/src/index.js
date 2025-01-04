@@ -223,9 +223,30 @@ function App() {
       <div style={{ marginTop: '10px', border: '1px solid #ccc', padding: '10px' }}>
         <h4>It's your turn!</h4>
         <p>Time left: {timeLeft} s</p>
-        <p>Word: {currentWord || '(click Guess or Skip to load one)'} </p>
-        <button onClick={guessWord}>Guess</button>
-        <button onClick={skipWord} style={{ marginLeft: '10px' }}>Skip</button>
+        <p style={{ fontSize: '2em', margin: '20px 0' }}>
+          {currentWord || '(Click Guess or Skip to load one)'}
+        </p>
+        <button
+          style={{
+            fontSize: '1.5em',
+            padding: '0.5em 1em',
+            marginRight: '10px',
+            cursor: 'pointer',
+          }}
+          onClick={guessWord}
+        >
+          Guess
+        </button>
+        <button
+          style={{
+            fontSize: '1.5em',
+            padding: '0.5em 1em',
+            cursor: 'pointer',
+          }}
+          onClick={skipWord}
+        >
+          Skip
+        </button>
       </div>
     );
   }
