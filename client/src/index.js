@@ -133,7 +133,15 @@ function App() {
         <h4>Enter your words</h4>
         {inputs}
         {!hasSubmitted && (
-          <button onClick={submitWords} style={{ marginTop: '10px' }}>
+          <button
+            onClick={submitWords}
+            style={{
+              fontSize: '1.5em',
+              padding: '0.5em 1em',
+              marginTop: '10px',
+              cursor: 'pointer',
+            }}
+          >
             Submit Words
           </button>
         )}
@@ -262,7 +270,16 @@ function App() {
         <h4>Round {activeRound.roundNumber} is in progress ({wordsLeft} words left)</h4>
         {isMyTurn
           ? renderActiveTurnUI()
-          : <button onClick={startTurn}>Start Turn</button>
+          : <button
+              onClick={startTurn}
+              style={{
+                fontSize: '1.5em',
+                padding: '0.5em 1em',
+                cursor: 'pointer',
+              }}
+            >
+              Start Turn
+            </button>
         }
       </div>
     );
@@ -475,7 +492,14 @@ function Admin() {
   return (
     <div style={{ margin: '20px' }}>
       <h2>Admin Page</h2>
-      <button onClick={createNewGame}>
+      <button
+        onClick={createNewGame}
+        style={{
+          fontSize: '1.5em',
+          padding: '0.5em 1em',
+          cursor: 'pointer',
+        }}
+      >
         Create a new game
       </button>
       <h3>Games:</h3>
@@ -502,7 +526,15 @@ function Admin() {
                 style={{ width: '50px', marginLeft: '5px' }}
               />
             </label>
-            <button onClick={setWordsPerPlayer} style={{ marginLeft: '10px' }}>
+            <button
+              onClick={setWordsPerPlayer}
+              style={{
+                fontSize: '1.5em',
+                padding: '0.5em 1em',
+                marginLeft: '10px',
+                cursor: 'pointer',
+              }}
+            >
               Set words-per-player
             </button>
           </div>
@@ -517,7 +549,15 @@ function Admin() {
               onChange={(e) => setTeamCount(Number(e.target.value))}
               style={{ width: '50px', marginLeft: '5px' }}
             />
-            <button onClick={distributeTeams} style={{ marginLeft: '10px' }}>
+            <button
+              onClick={distributeTeams}
+              style={{
+                fontSize: '1.5em',
+                padding: '0.5em 1em',
+                marginLeft: '10px',
+                cursor: 'pointer',
+              }}
+            >
               Distribute players into teams
             </button>
           </div>
@@ -530,7 +570,15 @@ function Admin() {
               value={secondsPerTurn}
               onChange={(e) => setSecondsPerTurn(Number(e.target.value))}
             />
-            <button onClick={startNewRound} style={{ marginLeft: '10px' }}>
+            <button
+              onClick={startNewRound}
+              style={{
+                fontSize: '1.5em',
+                padding: '0.5em 1em',
+                marginLeft: '10px',
+                cursor: 'pointer',
+              }}
+            >
               Start new round
             </button>
           </div>
