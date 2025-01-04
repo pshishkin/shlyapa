@@ -356,6 +356,28 @@ function Admin() {
     loadGames();
   }, []);
 
+  function renderGamePlayers(gameData) {
+    if (!gameData.players) {
+      return <p>No players yet</p>;
+    }
+    const allPlayers = Object.entries(gameData.players);
+    return (
+      <div style={{ marginTop: '10px' }}>
+        <h5>{allPlayers.length} player(s) in this game:</h5>
+        <ul>
+          {allPlayers.map(([browserId, playerName]) => {
+            const wordsProvided = gameData.wordsByPlayer?.[browserId]?.length || 0;
+            return (
+              <li key={browserId}>
+                {playerName} ({browserId}) — {wordsProvided} words
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    );
+  }
+
   function renderTeamDistribution(gameData) {
     if (!gameData) {
       return <p>No game data loaded yet.</p>;
@@ -445,7 +467,10 @@ function Admin() {
           </div>
 
           {gamesData[selectedGameId] ? (
-            renderTeamDistribution(gamesData[selectedGameId])
+            <div>
+              {renderGamePlayers(gamesData[selectedGameId])}
+              {renderTeamDistribution(gamesData[selectedGameId])}
+            </div>
           ) : (
             <p>No data loaded yet</p>
           )}
