@@ -292,10 +292,10 @@ app.post('/game/:gameId/start-turn', (req, res) => {
   });
 });
 
-// POST /game/:gameId/guess => body: { browserId }
+// POST /game/:gameId/guess => body: { browserId, word }
 app.post('/game/:gameId/guess', (req, res) => {
   const { gameId } = req.params;
-  const { browserId } = req.body;
+  const { browserId, word } = req.body;
   const game = games[gameId];
   if (!game) {
     return res.json({ ok: false, error: 'No such game' });
@@ -313,32 +313,30 @@ app.post('/game/:gameId/guess', (req, res) => {
     return res.json({ ok: false, error: 'Turn has expired' });
   }
 
-  if (round.unguessedWords.length === 0) {
-    return res.json({ ok: false, error: 'No words left' });
+  // Check if the word is still unguessed
+  const idx = round.unguessedWords.indexOf(word);
+  if (idx < 0) {
+    return res.json({ ok: false, error: 'That word is not available to guess' });
   }
 
-  // pick the first or random word from unguessed
-  // In a real app you might store a "currentWord" to avoid changing it on skip
-  const randomIndex = Math.floor(Math.random() * round.unguessedWords.length);
-  const word = round.unguessedWords[randomIndex];
-  // remove from unguessed, add to guessed
-  round.unguessedWords.splice(randomIndex, 1);
+  // Remove that word from unguessed, add to guessed
+  round.unguessedWords.splice(idx, 1);
   round.guessedWords.push(word);
 
-  // credit that guess to player's team
-  const userTeam = findTeamOfBrowserId(game, browserId); // define a helper
+  // Credit that guess to player's team
+  const userTeam = findTeamOfBrowserId(game, browserId);
   if (userTeam && round.teamScores[userTeam] != null) {
     round.teamScores[userTeam]++;
   }
 
-  // if the round is not over, pick another random word for the next guess
+  // Optionally pick a next random word for the client
   let nextWord = null;
   if (round.unguessedWords.length > 0) {
-    const nextIndex = Math.floor(Math.random() * round.unguessedWords.length);
-    nextWord = round.unguessedWords[nextIndex];
+    const randomIndex = Math.floor(Math.random() * round.unguessedWords.length);
+    nextWord = round.unguessedWords[randomIndex];
   }
 
-  // check if the round is finished (no words left)
+  // If no words left, round is over
   if (round.unguessedWords.length === 0) {
     round.isActive = false;
   }

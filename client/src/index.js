@@ -181,10 +181,14 @@ function App() {
 
   async function guessWord() {
     const browserId = localStorage.getItem('shlyapa_browser_id') || '';
+    const payload = {
+      browserId,
+      word: currentWord,
+    };
     const res = await fetch(`/game/${gameId}/guess`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ browserId }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     if (data.ok) {
