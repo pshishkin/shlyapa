@@ -266,7 +266,6 @@ app.post('/game/:gameId/start-turn', (req, res) => {
     return res.json({ ok: false, error: 'No active round' });
   }
 
-  // If a turn is already in progress and not expired, you might block
   const now = Date.now();
   if (
     activeRound.turnEndsAt &&
@@ -276,10 +275,21 @@ app.post('/game/:gameId/start-turn', (req, res) => {
     return res.json({ ok: false, error: 'Another turn is in progress' });
   }
 
-  // start a new turn, set turnEndsAt
+  // start a new turn
   activeRound.currentPlayer = browserId;
-  activeRound.turnEndsAt = now + activeRound.secondsPerTurn * 1000; // ms
-  res.json({ ok: true });
+  activeRound.turnEndsAt = now + activeRound.secondsPerTurn * 1000;
+
+  // pick a random "nextWord" so the user can guess immediately
+  let nextWord = null;
+  if (activeRound.unguessedWords.length > 0) {
+    const randomIndex = Math.floor(Math.random() * activeRound.unguessedWords.length);
+    nextWord = activeRound.unguessedWords[randomIndex];
+  }
+
+  res.json({
+    ok: true,
+    nextWord,
+  });
 });
 
 // POST /game/:gameId/guess => body: { browserId }

@@ -172,6 +172,9 @@ function App() {
     if (!data.ok) {
       alert(data.error || 'Error starting turn');
     } else {
+      if (data.nextWord) {
+        setCurrentWord(data.nextWord);
+      }
       fetchGameData();
     }
   }
@@ -227,10 +230,11 @@ function App() {
     if (!activeRound) {
       return null;
     }
-    const isRoundOverSoon = activeRound.unguessedWords?.length === 0;
+    const wordsLeft = activeRound.unguessedWords?.length || 0;
+
     return (
       <div style={{ marginTop: '10px', border: '1px solid #ccc', padding: '10px' }}>
-        <h4>Round {activeRound.roundNumber} is in progress</h4>
+        <h4>Round {activeRound.roundNumber} is in progress ({wordsLeft} words left)</h4>
         {isMyTurn
           ? renderActiveTurnUI()
           : <button onClick={startTurn}>Start Turn</button>
@@ -242,8 +246,6 @@ function App() {
   return (
     <div style={{ margin: '20px', fontFamily: 'sans-serif', textAlign: 'center' }}>
       <h3>Your name: {playerName}</h3>
-      <h1>Hello Shlyapa Client!</h1>
-      <p>Первая версия фронтенда</p>
       {gameId && <p>Game ID: {gameId}</p>}
 
       {renderWordInputs()}
