@@ -33,7 +33,10 @@ function App() {
         .then((res) => res.json())
         .then(async (data) => {
           if (!data.name) {
-            const newName = prompt('Enter your name:') || 'Unnamed';
+            let newName = null;
+            while (!newName) {
+              newName = prompt('Enter your name:');
+            }
             await fetch(`/game/${gameId}/player`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
