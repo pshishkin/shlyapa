@@ -425,7 +425,12 @@ function Admin() {
           </button>
           {isDetailVisible && (
             <div style={{ marginTop: '10px' }}>
-              <p>Guessed words ({r.guessedWords.length}): {r.guessedWords.join(', ')}</p>
+              <p>
+                Guessed words ({r.guessedWords.length}):{" "}
+                {r.guessedWords
+                  .map(g => `${g.word} (${gameData.players[g.guessedBy] || g.guessedBy})`)
+                  .join(', ')}
+              </p>
               <p>Unguessed words ({r.unguessedWords.length}): {r.unguessedWords.join(', ')}</p>
               <p>Team scores: {scoresString}</p>
             </div>

@@ -10,7 +10,7 @@ interface Round {
   roundNumber: number;
   isActive: boolean;
   secondsPerTurn: number;
-  guessedWords: string[];
+  guessedWords: { word: string, guessedBy: string }[];
   unguessedWords: string[];
   teamScores: Record<string, number>; // teamName => how many words guessed in this round
   currentPlayer?: string;            // browserId of the active player
@@ -319,9 +319,9 @@ app.post('/game/:gameId/guess', (req, res) => {
     return res.json({ ok: false, error: 'That word is not available to guess' });
   }
 
-  // Remove that word from unguessed, add to guessed
+  // Remove that word from unguessed, add to guessed with who guessed it
   round.unguessedWords.splice(idx, 1);
-  round.guessedWords.push(word);
+  round.guessedWords.push({ word, guessedBy: browserId });
 
   // Credit that guess to player's team
   const userTeam = findTeamOfBrowserId(game, browserId);
