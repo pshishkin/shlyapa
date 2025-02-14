@@ -12,4 +12,4 @@
    ```bash
    docker-compose up --build
    ```
-3. Откройте http://localhost:3000 для клиента, сервер слушается на http://localhost:8080.
+3. Откройте http://localhost:3000 для клиента, сервер слушается на http://localhost:8080, админка на http://localhost:3000/admin
